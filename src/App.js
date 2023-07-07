@@ -53,6 +53,7 @@ function App() {
     [compound, setCompound] = useState(null),
     [reportingEvent, setReportingEvent] = useState(null),
     [info1, setInfo1] = useState(null),
+    [info2, setInfo2] = useState(null),
     [open, setOpen] = useState(false);
 
   // define functions
@@ -193,26 +194,47 @@ function App() {
     setCompound(null);
     setReportingEvent(null);
     setInfo1(null);
+    setInfo2(null);
     const split = singleClickedPath.split("/");
     console.log(split, split.length);
-    if (split.length === 5) {
-      const tempStudy = split.pop(),
-        row = info["studies_info"].filter((r) => r.study === tempStudy);
-      console.log("tempStudy", tempStudy, "row", row);
-      if (row.length > 0) setInfo1(row[0]);
-      setStudy(tempStudy);
-    } else if (split.length === 8) {
-      const tempReportingEvent = split.pop();
-      console.log("tempReportingEvent", tempReportingEvent);
-      setReportingEvent(tempReportingEvent);
-    } else if (split.length === 4) {
-      const tempIndication = split.pop();
-      console.log("tempIndication", tempIndication);
-      setIndication(tempIndication);
-    } else if (split.length === 3) {
+    // compound
+    if (split.length === 3) {
       const tempCompound = split.pop();
       console.log("tempCompound", tempCompound);
       setCompound(tempCompound);
+    }
+    // indication
+    else if (split.length === 4) {
+      const tempIndication = split.pop();
+      // get info from tpindic
+      const row2 = info["tpindic"].filter(
+        (r) => r.indication.toUpperCase() === tempIndication.toUpperCase()
+      );
+      if (row2.length > 0) setInfo2(row2[0]);
+      console.log("tempIndication", tempIndication, "row2", row2);
+      setIndication(tempIndication);
+    }
+    // study
+    else if (split.length === 5) {
+      const tempStudy = split.pop();
+      // get info from studies_info
+      const row1 = info["studies_info"].filter(
+        (r) => r.study.toUpperCase() === tempStudy.toUpperCase()
+      );
+      if (row1.length > 0) setInfo1(row1[0]);
+      // get info from tpstudy
+      const row2 = info["tpstudy"].filter(
+        (r) => r.newstudy.toUpperCase() === tempStudy.toUpperCase()
+      );
+      if (row2.length > 0) setInfo2(row2[0]);
+      console.log("tempStudy", tempStudy, "row1", row1, "row2", row2);
+      setStudy(tempStudy);
+    }
+    // reporting event
+    else if (split.length === 8) {
+      const tempReportingEvent = split.pop();
+      console.log("tempReportingEvent", tempReportingEvent);
+      setReportingEvent(tempReportingEvent);
     }
   }, [singleClickedPath, doubleClickedPath]);
 
@@ -375,51 +397,53 @@ function App() {
           <DialogContent sx={{ height: 250 }}>
             {info1 ? (
               <>
-                <TextField
-                  value={info1.product}
-                  label="Product"
-                  sx={{ width: 100, mr: 2 }}
-                  variant="standard"
-                  size="small"
-                />
-                <TextField
-                  value={info1.indication}
-                  label="Indication"
-                  sx={{ width: 100, mr: 2 }}
-                  variant="standard"
-                  size="small"
-                />
-                <TextField
-                  value={info1.status}
-                  label="Status"
-                  sx={{ width: 200, mr: 2 }}
-                  variant="standard"
-                  size="small"
-                />
-                <TextField
-                  value={singleClickedPath}
-                  label="Path"
-                  sx={{ width: 300, mr: 2 }}
-                  variant="standard"
-                  size="small"
-                />
-                <TextField
-                  value={info1.No_of_subjects_treated}
-                  label="Subjects"
-                  sx={{ width: 100, mr: 2 }}
-                  variant="standard"
-                  size="small"
-                />
-                <TextField
-                  margin="dense"
-                  value={info1.Protocol_name}
-                  label="Protocol"
-                  fullWidth
-                  multiline
-                  maxRows={4}
-                  variant="standard"
-                  size="small"
-                />
+                {Object.keys(info1).map((k) => {
+                  let width = 200,
+                    multiline = false;
+                  if (["Trial_Title", "Protocol_name"].includes(k)) {
+                    width = screenWidth - 200;
+                    multiline = true;
+                  }
+                  if (k!=='id' && info1[k] && info1[k] !== null && info2[k] !== "") {
+                    return (
+                      <TextField
+                        value={info1[k]}
+                        label={k}
+                        sx={{ width: width, mr: 2 }}
+                        multiline={multiline}
+                        variant="standard"
+                        size="small"
+                      />
+                    );
+                  } else return <></>;
+                })}
+              </>
+            ) : null}
+            {info2 ? (
+              <>
+                {Object.keys(info2).map((k) => {
+                  if (
+                    ![
+                      "id",
+                      "indication",
+                      "compound",
+                      "newstudy",
+                      "_NAME_",
+                    ].includes(k) &&
+                    info2[k] !== null &&
+                    info2[k] !== ""
+                  )
+                    return (
+                      <TextField
+                        value={info2[k]}
+                        label={k}
+                        sx={{ width: 200, mr: 2 }}
+                        variant="standard"
+                        size="small"
+                      />
+                    );
+                  else return <></>;
+                })}
               </>
             ) : null}
           </DialogContent>
@@ -434,7 +458,9 @@ function App() {
               <Button
                 onClick={() => {
                   openInNewTab(
-                    `https://xarprod.ondemand.sas.com/lsaf/webdav/repo/general/biostat/tools/fileviewer/index.html?file=${singleClickedPath}`
+                    study
+                      ? `https://xarprod.ondemand.sas.com/lsaf/webdav/repo/general/biostat/tools/fileviewer/index.html?file=${singleClickedPath}/biostat/staging`
+                      : `https://xarprod.ondemand.sas.com/lsaf/webdav/repo/general/biostat/tools/fileviewer/index.html?file=${singleClickedPath}`
                   );
                 }}
               >
@@ -453,6 +479,25 @@ function App() {
                   onClick={() => {
                     openInNewTab(
                       `https://xarprod.ondemand.sas.com/lsaf/filedownload/sdd%3A//${singleClickedPath}/documents/projectstatus.html`
+                    );
+                  }}
+                >
+                  Old Study Dashboard
+                </Button>
+              </Tooltip>
+            ) : null}
+            {singleClickedPath && singleClickedPath.split("/").length > 5 ? (
+              <Tooltip
+                title={
+                  singleClickedPath
+                    ? `Open the Study Dashboard (if it exists)`
+                    : ""
+                }
+              >
+                <Button
+                  onClick={() => {
+                    openInNewTab(
+                      `https://xarprod.ondemand.sas.com/lsaf/filedownload/sdd%3A///general/biostat/tools/dashstudy/index.html?file=${singleClickedPath}/documents/meta/dashstudy.json`
                     );
                   }}
                 >
