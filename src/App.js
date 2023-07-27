@@ -15,8 +15,13 @@ import {
   Typography,
   Divider,
   TextField,
+  List,
+  ListItem,
+  Menu,
+  MenuItem,
 } from "@mui/material";
-import { Menu, Visibility } from "@mui/icons-material";
+import { Visibility } from "@mui/icons-material";
+import MenuIcon from "@mui/icons-material/Menu";
 import { DataGridPro, GridToolbar } from "@mui/x-data-grid-pro";
 import { LicenseInfo } from "@mui/x-data-grid-pro";
 import Highcharts from "highcharts";
@@ -68,7 +73,9 @@ function App() {
     [open, setOpen] = useState(false),
     [treeData, setTreeData] = useState(false),
     [treeDataTable, setTreeDataTable] = useState(false),
-    topMargin=280,
+    [showHolidays, setShowHolidays] = useState(false),
+    [selectedDate, setSelectedDate] = useState(null),
+    topMargin = 350,
     groupingColDef = {
       minWidth: 300,
       headerName: "Study Hierarchy",
@@ -77,6 +84,13 @@ function App() {
       //   const { value } = cellValues;
       //   return value;
       // },
+    },
+    [anchorEl, setAnchorEl] = useState(null),
+    handleClickMenu = (event) => {
+      setAnchorEl(event.currentTarget);
+    },
+    handleCloseMenu = () => {
+      setAnchorEl(null);
     };
 
   // define functions
@@ -84,8 +98,11 @@ function App() {
       const win = window.open(url, "_blank");
       win.focus();
     },
-    handleClose = () => {
+    handleCloseInfoDialog = () => {
       setOpen(false);
+    },
+    handleCloseHolidays = () => {
+      setShowHolidays(false);
     },
     getTreeDataPath = (row) => row.group,
     // double click in study table opens dialog with info about what was clicked on
@@ -161,7 +178,7 @@ function App() {
 
   // make study & reporting event level table data
   useEffect(() => {
-    console.log("info", info);
+    console.log("info", info, "userHolidays", userHolidays);
 
     // studies
     const tempStudies0 = info.treegraph.filter(
@@ -265,7 +282,7 @@ function App() {
       "sdtm_ae_refresh_date",
       "status",
     ].map((s) => {
-      return { field: s, headerName: s, width: 90 };
+      return { field: s, headerName: s.replace(/_/g, " "), width: 90 };
     });
 
     setStudiesCols([
@@ -273,16 +290,74 @@ function App() {
         field: "compound",
         headerName: "compound",
         width: 80,
+        renderCell: (cellValues) => {
+          const { value, row } = cellValues;
+          let s = row.path.split("/");
+          s.length = 3;
+          let path = s.join("/");
+          return (
+            <Tooltip title={`Open file viewer at ${value}`}>
+              <Box
+                onClick={() => {
+                  window.open(
+                    "https://xarprod.ondemand.sas.com/lsaf/filedownload/sdd:/general/biostat/tools/fileviewer/index.html?file=" +
+                      path
+                  );
+                }}
+              >
+                {value}
+              </Box>
+            </Tooltip>
+          );
+        },
       },
       {
         field: "indication",
         headerName: "indication",
         width: 80,
+        renderCell: (cellValues) => {
+          const { value, row } = cellValues;
+          let s = row.path.split("/");
+          s.length = 4;
+          let path = s.join("/");
+          return (
+            <Tooltip title={`Open file viewer at ${value}`}>
+              <Box
+                onClick={() => {
+                  window.open(
+                    "https://xarprod.ondemand.sas.com/lsaf/filedownload/sdd:/general/biostat/tools/fileviewer/index.html?file=" +
+                      path
+                  );
+                }}
+              >
+                {value}
+              </Box>
+            </Tooltip>
+          );
+        },
       },
       {
         field: "study",
         headerName: "study",
         width: 100,
+        renderCell: (cellValues) => {
+          const { value, row } = cellValues;
+          return (
+            <Tooltip title={`Open file viewer at ${value}`}>
+              <Box
+                onClick={() => {
+                  window.open(
+                    "https://xarprod.ondemand.sas.com/lsaf/filedownload/sdd:/general/biostat/tools/fileviewer/index.html?file=" +
+                      row.path +
+                      "/biostat/staging"
+                  );
+                }}
+              >
+                {value}
+              </Box>
+            </Tooltip>
+          );
+        },
       },
       ...roleCols,
       ...studyCols,
@@ -326,33 +401,110 @@ function App() {
         field: "compound",
         headerName: "compound",
         width: 80,
+        renderCell: (cellValues) => {
+          const { value, row } = cellValues;
+          let s = row.path.split("/");
+          s.length = 3;
+          let path = s.join("/");
+          return (
+            <Tooltip title={`Open file viewer at ${value}`}>
+              <Box
+                onClick={() => {
+                  window.open(
+                    "https://xarprod.ondemand.sas.com/lsaf/filedownload/sdd:/general/biostat/tools/fileviewer/index.html?file=" +
+                      path
+                  );
+                }}
+              >
+                {value}
+              </Box>
+            </Tooltip>
+          );
+        },
       },
       {
         field: "indication",
         headerName: "indication",
         width: 80,
+        renderCell: (cellValues) => {
+          const { value, row } = cellValues;
+          let s = row.path.split("/");
+          s.length = 4;
+          let path = s.join("/");
+          return (
+            <Tooltip title={`Open file viewer at ${value}`}>
+              <Box
+                onClick={() => {
+                  window.open(
+                    "https://xarprod.ondemand.sas.com/lsaf/filedownload/sdd:/general/biostat/tools/fileviewer/index.html?file=" +
+                      path
+                  );
+                }}
+              >
+                {value}
+              </Box>
+            </Tooltip>
+          );
+        },
       },
       {
         field: "study",
         headerName: "study",
         width: 100,
+        renderCell: (cellValues) => {
+          const { value, row } = cellValues;
+          let s = row.path.split("/");
+          s.pop();
+          const studyPath = s.join("/");
+          return (
+            <Tooltip title={`Open file viewer at ${value}`}>
+              <Box
+                onClick={() => {
+                  window.open(
+                    "https://xarprod.ondemand.sas.com/lsaf/filedownload/sdd:/general/biostat/tools/fileviewer/index.html?file=" +
+                      studyPath
+                  );
+                }}
+              >
+                {value}
+              </Box>
+            </Tooltip>
+          );
+        },
       },
       {
         field: "rep_event",
         headerName: "rep_event",
         width: 200,
+        renderCell: (cellValues) => {
+          const { value, row } = cellValues;
+          return (
+            <Tooltip title={`Open file viewer at ${value}`}>
+              <Box
+                onClick={() => {
+                  window.open(
+                    "https://xarprod.ondemand.sas.com/lsaf/filedownload/sdd:/general/biostat/tools/fileviewer/index.html?file=" +
+                      row.path
+                  );
+                }}
+              >
+                {value}
+              </Box>
+            </Tooltip>
+          );
+        },
       },
       ...roleCols,
     ]);
     setRepEvent(tempRepEvent);
 
-    console.log(
-      "tempStudies",
-      tempStudies,
-      roleCols,
-      "tempRepEvent",
-      tempRepEvent
-    );
+    // console.log(
+    //   "tempStudies",
+    //   tempStudies,
+    //   roleCols,
+    //   "tempRepEvent",
+    //   tempRepEvent
+    // );
   }, []);
 
   // make study hierarchy table data
@@ -470,7 +622,7 @@ function App() {
     setGraph1({
       chart: {
         type: "treegraph",
-        height: screenHeight * 0.9,
+        height: screenHeight -topMargin,
         width: screenWidth * 0.85,
         zooming: { type: "xy" },
       },
@@ -583,88 +735,26 @@ function App() {
   return (
     <div className="App">
       <Box sx={{ m: 2, flexGrow: 1 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <AppBar position="static">
-              <Toolbar variant="dense">
-                <IconButton
-                  edge="start"
-                  color="inherit"
-                  aria-label="menu"
-                  sx={{ mr: 2 }}
-                >
-                  <Menu />
-                </IconButton>
-                <Typography variant="h6" color="inherit" component="div">
-                  Resource Management
-                </Typography>
-                <Divider
-                  orientation="vertical"
-                  flexItem
-                  sx={{ ml: 2, mr: 2 }}
-                />
-                {study ? (
-                  <Typography variant="h6" color="yellow" component="div">
-                    Study: {study}
-                  </Typography>
-                ) : null}
-                {compound ? (
-                  <Typography variant="h6" color="yellow" component="div">
-                    Compound: {compound}
-                  </Typography>
-                ) : null}
-                {indication ? (
-                  <Typography variant="h6" color="yellow" component="div">
-                    Indication: {indication}
-                  </Typography>
-                ) : null}
-                {reportingEvent ? (
-                  <Typography variant="h6" color="yellow" component="div">
-                    Reporting Event: {reportingEvent}
-                  </Typography>
-                ) : null}
-                <Divider
-                  orientation="vertical"
-                  flexItem
-                  sx={{ ml: 2, mr: 2 }}
-                />
-                {graph1 && showTree ? (
-                  <Tooltip
-                    title={singleClickedName ? `View ${singleClickedName}` : ""}
-                  >
-                    <IconButton
-                      color="inherit"
-                      sx={{ mr: 2 }}
-                      onClick={() => {
-                        setOpen(true);
-                      }}
-                    >
-                      <Visibility />
-                    </IconButton>
-                  </Tooltip>
-                ) : null}
-              </Toolbar>
-            </AppBar>
-          </Grid>
-          <Grid item xs={1}>
-            {tables.map((t, id) => (
-              <Tooltip key={"tt" + id} title={`View the table: ${t}`}>
-                <Button
-                  color={"success"}
-                  size="small"
-                  variant="outlined"
-                  onClick={() => {
-                    setRows(info[t]);
-                    setCols(columnDef[t]);
-                    setTreeDataTable(false);
-                    setShowTree(false);
-                  }}
-                  sx={{ mb: 1 }}
-                >
-                  {t}
-                </Button>
-              </Tooltip>
-            ))}
+        <AppBar position="static">
+          <Toolbar variant="dense">
+            <Tooltip title="View a table">
+              <IconButton
+                edge="start"
+                color="inherit"
+                sx={{ mr: 2 }}
+                onClick={handleClickMenu}
+                aria-label="menu"
+                aria-controls={Boolean(anchorEl) ? "View a table" : undefined}
+                aria-haspopup="true"
+                aria-expanded={Boolean(anchorEl) ? "true" : undefined}
+              >
+                <MenuIcon />
+              </IconButton>
+            </Tooltip>
+            <Typography variant="h6" color="inherit" component="div">
+              Resource Management
+            </Typography>
+            <Divider orientation="vertical" flexItem sx={{ ml: 2, mr: 2 }} />
             <Tooltip title="from %lsaf_getchildren(lsaf_path=/clinical, lsaf_recursive=6)">
               <Button
                 color={"success"}
@@ -680,7 +770,7 @@ function App() {
                   setDoubleClickedPath(null);
                 }}
                 variant="contained"
-                sx={{ mt: 2 }}
+                sx={{ mt: 2, mb: 2, mr: 1 }}
               >
                 Study Graph
               </Button>
@@ -701,9 +791,9 @@ function App() {
                   setDoubleClickedPath(null);
                 }}
                 variant="contained"
-                sx={{ mt: 2 }}
+                sx={{ mt: 2, mb: 2, mr: 1 }}
               >
-                Study Table
+                Hierarchy
               </Button>
             </Tooltip>
             <Tooltip title="Table of Studys">
@@ -717,7 +807,7 @@ function App() {
                   setShowTree(false);
                 }}
                 variant="contained"
-                sx={{ mt: 2 }}
+                sx={{ mt: 2, mb: 2, mr: 1 }}
               >
                 Studies
               </Button>
@@ -733,121 +823,192 @@ function App() {
                   setShowTree(false);
                 }}
                 variant="contained"
-                sx={{ mt: 2 }}
+                sx={{ mt: 2, mb: 2, mr: 1 }}
               >
                 Rep Events
               </Button>
-            </Tooltip>
-          </Grid>
-          <Grid item xs={11}>
-            {userHolidays.available && (
-              <Box sx={{ width: "80%" }}>
-                <CalendarHeatmap
-                  startDate={new Date("2023-06-01")}
-                  endDate={new Date("2024-07-01")}
-                  values={userHolidays.available}
-                  classForValue={(value) => {
-                    if (!value) {
-                      return "color-empty";
-                    } else if (value.count < 5) return `color-0`;
-                    else if (value.count < 7) return `color-1`;
-                    else if (value.count < 9) return `color-2`;
-                    else if (value.count < 11) return `color-3`;
-                    else if (value.count < 13) return `color-4`;
-                    else if (value.count < 15) return `color-5`;
-                    else if (value.count < 17) return `color-6`;
-                    else if (value.count < 19) return `color-7`;
-                    else if (value.count < 21) return `color-8`;
-                    else if (value.count < 23) return `color-9`;
-                    else return `color-10`;
-                  }}
-                  tooltipDataAttrs={(value) => {
-                    return {
-                      "data-tooltip-id": "my-tooltip",
-                      "data-tooltip-content": `${value.date} has ${value.count} people available`,
-                    };
-                  }}
-                  showWeekdayLabels={true}
-                  onClick={(value) =>
-                    alert(`Clicked on value with count: ${value.count}`)
-                  }
-                />
-                <ReactTooltip id="my-tooltip" />
-              </Box>
-            )}
-            {rows && cols && !treeDataTable ? (
-              <DataGridPro
-                rows={rows}
-                columns={cols}
-                density="compact"
-                hideFooter={true}
-                disableColumnFilter
-                disableColumnSelector
-                disableDensitySelector
-                slots={{ toolbar: GridToolbar }}
-                slotProps={{
-                  toolbar: {
-                    showQuickFilter: true,
-                    quickFilterProps: { debounceMs: 500 },
-                  },
-                }}
-                // treeData={treeData}
-                // getTreeDataPath={getTreeDataPath}
-                sx={{
-                  height: windowDimension.winHeight - topMargin,
-                  fontWeight: "fontSize=5",
-                  fontSize: "0.7em",
-                  padding: 1,
-                }}
-              />
-            ) : null}
-            {rows && cols && treeDataTable ? (
-              <DataGridPro
-                rows={rows}
-                columns={cols}
-                density="compact"
-                hideFooter={true}
-                treeData={treeData}
-                getTreeDataPath={getTreeDataPath}
-                groupingColDef={groupingColDef}
-                onRowDoubleClick={handleDoubleClick}
-                disableColumnFilter
-                disableColumnSelector
-                disableDensitySelector
-                slots={{ toolbar: GridToolbar }}
-                slotProps={{
-                  toolbar: {
-                    showQuickFilter: true,
-                    quickFilterProps: { debounceMs: 500 },
-                  },
-                }}
-                defaultGroupingExpansionDepth={1}
-                // apiRef={}
-                // onRowClick={(e) => {
-                //   setSingleClickedPath(e.row.path);
-                //   setSingleClickedName(e.row.path.pop());
-                // }}
-                // defaultGroupingExpansionDepth={-1}
-                sx={{
-                  height: windowDimension.winHeight - topMargin,
-                  fontWeight: "fontSize=5",
-                  fontSize: "0.7em",
-                  padding: 1,
-                }}
-              />
-            ) : null}
+            </Tooltip>{" "}
+            <Divider orientation="vertical" flexItem sx={{ ml: 2, mr: 2 }} />
             {graph1 && showTree ? (
-              <HighchartsReact highcharts={Highcharts} options={graph1} />
+              <Tooltip
+                title={singleClickedName ? `View ${singleClickedName}` : ""}
+              >
+                <IconButton
+                  color="inherit"
+                  sx={{ mr: 2 }}
+                  onClick={() => {
+                    setOpen(true);
+                  }}
+                >
+                  <Visibility />
+                </IconButton>
+              </Tooltip>
             ) : null}
-          </Grid>
-        </Grid>
+            {study ? (
+              <Typography variant="h6" color="yellow" component="div">
+                Study: {study}
+              </Typography>
+            ) : null}
+            {compound ? (
+              <Typography variant="h6" color="yellow" component="div">
+                Compound: {compound}
+              </Typography>
+            ) : null}
+            {indication ? (
+              <Typography variant="h6" color="yellow" component="div">
+                Indication: {indication}
+              </Typography>
+            ) : null}
+            {reportingEvent ? (
+              <Typography variant="h6" color="yellow" component="div">
+                Reporting Event: {reportingEvent}
+              </Typography>
+            ) : null}
+          </Toolbar>
+          <Menu
+            anchorEl={anchorEl}
+            id="account-menu"
+            open={Boolean(anchorEl)}
+            onClose={handleCloseMenu}
+            onClick={handleCloseMenu}
+            transformOrigin={{ horizontal: "right", vertical: "top" }}
+            anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+          >
+            {tables.map((t, id) => (
+              <MenuItem key={"menuItem" + id} onClick={handleCloseMenu}>
+                <Tooltip key={"tt" + id} title={`View the table: ${t}`}>
+                  <Box
+                    color={"success"}
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      setRows(info[t]);
+                      setCols(columnDef[t]);
+                      setTreeDataTable(false);
+                      setShowTree(false);
+                    }}
+                    // sx={{ mb: 1 }}
+                  >
+                    {t}
+                  </Box>
+                </Tooltip>
+              </MenuItem>
+            ))}
+          </Menu>
+        </AppBar>
+        {userHolidays.available && (
+          <Box sx={{ m: 1 }}>
+            <CalendarHeatmap
+              startDate={new Date("2023-06-01")}
+              endDate={new Date("2024-07-01")}
+              values={userHolidays.available}
+              classForValue={(value) => {
+                if (!value) {
+                  return "color-empty";
+                } else if (value.count < 5) return `color-0`;
+                else if (value.count < 7) return `color-1`;
+                else if (value.count < 9) return `color-2`;
+                else if (value.count < 11) return `color-3`;
+                else if (value.count < 13) return `color-4`;
+                else if (value.count < 15) return `color-5`;
+                else if (value.count < 17) return `color-6`;
+                else if (value.count < 19) return `color-7`;
+                else if (value.count < 21) return `color-8`;
+                else if (value.count < 23) return `color-9`;
+                else return `color-10`;
+              }}
+              tooltipDataAttrs={(value) => {
+                return {
+                  "data-tooltip-id": "my-tooltip",
+                  "data-tooltip-content": `${value.date} has ${value.count} people available`,
+                };
+              }}
+              showWeekdayLabels={true}
+              onClick={(value) => {
+                setShowHolidays(true);
+                setSelectedDate(value.date);
+                const who = userHolidays.holidays.filter((r) => {
+                  console.log(r.date, selectedDate);
+                  return r.date === selectedDate;
+                });
+                // alert(`Clicked on value with count: ${value.count}`)
+              }}
+            />
+            <ReactTooltip id="my-tooltip" />
+          </Box>
+        )}
+        {rows && cols && !treeDataTable ? (
+          <DataGridPro
+            rows={rows}
+            columns={cols}
+            density="compact"
+            hideFooter={true}
+            disableColumnFilter
+            disableColumnSelector
+            disableDensitySelector
+            slots={{ toolbar: GridToolbar }}
+            slotProps={{
+              toolbar: {
+                showQuickFilter: true,
+                quickFilterProps: { debounceMs: 500 },
+              },
+            }}
+            // treeData={treeData}
+            // getTreeDataPath={getTreeDataPath}
+            sx={{
+              height: windowDimension.winHeight - topMargin,
+              fontWeight: "fontSize=5",
+              fontSize: "0.7em",
+              padding: 1,
+            }}
+          />
+        ) : null}
+        {rows && cols && treeDataTable ? (
+          <DataGridPro
+            rows={rows}
+            columns={cols}
+            density="compact"
+            hideFooter={true}
+            treeData={treeData}
+            getTreeDataPath={getTreeDataPath}
+            groupingColDef={groupingColDef}
+            onRowDoubleClick={handleDoubleClick}
+            disableColumnFilter
+            disableColumnSelector
+            disableDensitySelector
+            slots={{ toolbar: GridToolbar }}
+            slotProps={{
+              toolbar: {
+                showQuickFilter: true,
+                quickFilterProps: { debounceMs: 500 },
+              },
+            }}
+            defaultGroupingExpansionDepth={1}
+            // apiRef={}
+            // onRowClick={(e) => {
+            //   setSingleClickedPath(e.row.path);
+            //   setSingleClickedName(e.row.path.pop());
+            // }}
+            // defaultGroupingExpansionDepth={-1}
+            sx={{
+              height: windowDimension.winHeight - topMargin,
+              fontWeight: "fontSize=5",
+              fontSize: "0.7em",
+              padding: 1,
+            }}
+          />
+        ) : null}
+        {graph1 && showTree ? (
+          <HighchartsReact highcharts={Highcharts} options={graph1} />
+        ) : null}
+        {/* Dialog with info about a level in hierarchy */}
         <Dialog
           // fullScreen
           // sx={{ height: "1200" }}
           // fullWidth={true}
           // maxWidth={"sd"}
           open={open}
-          onClose={handleClose}
+          onClose={handleCloseInfoDialog}
         >
           <DialogTitle>
             {compound ? (
@@ -993,8 +1154,33 @@ function App() {
                 </Button>
               </Tooltip>
             ) : null}
-            <Button onClick={handleClose}>Cancel</Button>
+            <Button onClick={handleCloseInfoDialog}>Cancel</Button>
           </DialogActions>
+        </Dialog>
+        {/* Dialog with Holiday info */}
+        <Dialog onClose={handleCloseHolidays} open={showHolidays}>
+          <DialogTitle>Who is on holiday on {selectedDate}?</DialogTitle>
+          <List dense>
+            {userHolidays.holidays
+              .filter((r) => r.date === selectedDate)
+              .map((r) => (
+                <ListItem>
+                  <Button
+                    sx={{
+                      mr: "4px",
+                      p: "4px",
+                      fontSize: ".7rem",
+                      minWidth: "30px",
+                    }}
+                    size="small"
+                    variant="outlined"
+                    href={`mailto:${r.userid}@argenx.com`}
+                  >
+                    {r.name} {r.profile ? "(" + r.profile + ")" : null}
+                  </Button>
+                </ListItem>
+              ))}
+          </List>
         </Dialog>
       </Box>
     </div>
