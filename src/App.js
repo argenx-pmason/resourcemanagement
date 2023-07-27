@@ -17,13 +17,18 @@ import {
   TextField,
 } from "@mui/material";
 import { Menu, Visibility } from "@mui/icons-material";
-import { DataGridPro } from "@mui/x-data-grid-pro";
+import { DataGridPro, GridToolbar } from "@mui/x-data-grid-pro";
 import { LicenseInfo } from "@mui/x-data-grid-pro";
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import info from "./studies.json";
+import dashStudyFiles from "./dash-study-files.json";
+import userHolidays from "./user_holidays.json";
+import { FolderOpen, Dashboard } from "@mui/icons-material";
+import CalendarHeatmap from "react-calendar-heatmap";
+import { Tooltip as ReactTooltip } from "react-tooltip";
 LicenseInfo.setLicenseKey(
-  "5b931c69b031b808de26d5902e04c36fTz00Njk0NyxFPTE2ODg4MDI3MDM3MjAsUz1wcm8sTE09c3Vic2NyaXB0aW9uLEtWPTI="
+  "369a1eb75b405178b0ae6c2b51263cacTz03MTMzMCxFPTE3MjE3NDE5NDcwMDAsUz1wcm8sTE09c3Vic2NyaXB0aW9uLEtWPTI="
 );
 function App() {
   require("highcharts/modules/exporting")(Highcharts);
@@ -42,6 +47,12 @@ function App() {
     }),
     [rows, setRows] = useState(null),
     [cols, setCols] = useState(null),
+    [studyData, setStudyData] = useState(null),
+    [studyDataCols, setStudyDataCols] = useState(null),
+    [repEvent, setRepEvent] = useState(null),
+    [repEventCols, setRepEventCols] = useState(null),
+    [studies, setStudies] = useState(null),
+    [studiesCols, setStudiesCols] = useState(null),
     [graph1, setGraph1] = useState(null),
     [showTree, setShowTree] = useState(false),
     [singleClickedName, setSingleClickedName] = useState(null),
@@ -54,7 +65,19 @@ function App() {
     [reportingEvent, setReportingEvent] = useState(null),
     [info1, setInfo1] = useState(null),
     [info2, setInfo2] = useState(null),
-    [open, setOpen] = useState(false);
+    [open, setOpen] = useState(false),
+    [treeData, setTreeData] = useState(false),
+    [treeDataTable, setTreeDataTable] = useState(false),
+    topMargin=280,
+    groupingColDef = {
+      minWidth: 300,
+      headerName: "Study Hierarchy",
+      // TODO: allow other icons to click on, so we could expand several levels at once
+      // renderCell: (cellValues) => {
+      //   const { value } = cellValues;
+      //   return value;
+      // },
+    };
 
   // define functions
   const openInNewTab = (url) => {
@@ -63,6 +86,65 @@ function App() {
     },
     handleClose = () => {
       setOpen(false);
+    },
+    getTreeDataPath = (row) => row.group,
+    // double click in study table opens dialog with info about what was clicked on
+    handleDoubleClick = (e) => {
+      const { row } = e;
+      console.log(row);
+      extractInfo(row.path);
+      setOpen(true);
+    },
+    // used when user selects a level in a hierarchy to grab data of interest for what was selected
+    extractInfo = (path) => {
+      if (path === null) return;
+      setStudy(null);
+      setIndication(null);
+      setCompound(null);
+      setReportingEvent(null);
+      setInfo1(null);
+      setInfo2(null);
+      const split = path.split("/");
+      console.log(split, split.length);
+      // compound
+      if (split.length === 3) {
+        const tempCompound = split.pop();
+        console.log("tempCompound", tempCompound);
+        setCompound(tempCompound);
+      }
+      // indication
+      else if (split.length === 4) {
+        const tempIndication = split.pop();
+        // get info from tpindic
+        const row2 = info["tpindic"].filter(
+          (r) => r.indication.toUpperCase() === tempIndication.toUpperCase()
+        );
+        if (row2.length > 0) setInfo2(row2[0]);
+        console.log("tempIndication", tempIndication, "row2", row2);
+        setIndication(tempIndication);
+      }
+      // study
+      else if (split.length === 5) {
+        const tempStudy = split.pop();
+        // get info from studies_info
+        const row1 = info["studies_info"].filter(
+          (r) => r.study.toUpperCase() === tempStudy.toUpperCase()
+        );
+        if (row1.length > 0) setInfo1(row1[0]);
+        // get info from tpstudy
+        const row2 = info["tpstudy"].filter(
+          (r) => r.newstudy.toUpperCase() === tempStudy.toUpperCase()
+        );
+        if (row2.length > 0) setInfo2(row2[0]);
+        console.log("tempStudy", tempStudy, "row1", row1, "row2", row2);
+        setStudy(tempStudy);
+      }
+      // reporting event
+      else if (split.length === 8) {
+        const tempReportingEvent = split.pop();
+        console.log("tempReportingEvent", tempReportingEvent);
+        setReportingEvent(tempReportingEvent);
+      }
     };
 
   var clickDetected = false;
@@ -77,11 +159,318 @@ function App() {
   });
   // console.log("tables", tables, "columnDef", columnDef, "info", info);
 
+  // make study & reporting event level table data
+  useEffect(() => {
+    console.log("info", info);
+
+    // studies
+    const tempStudies0 = info.treegraph.filter(
+        (t) => t.id.substring(0, 1) === "4"
+      ),
+      tempStudies1 = tempStudies0.map((s, sid) => {
+        const split = s.path.split("/"),
+          compound = split[2],
+          indication = split[3],
+          study = split[4];
+        return {
+          compound: compound,
+          indication: indication,
+          study: study,
+          ...s,
+        };
+      });
+    // merge in the info about user roles
+    const tempStudies2 = tempStudies1.map((r, rid) => {
+      const e0 = info.tpstudy.filter(
+          (f) => f.newstudy.toUpperCase() === r.study.toUpperCase()
+        ),
+        e = e0.length > 0 ? e0[0] : {};
+      return {
+        ...r,
+        ...e,
+      };
+    });
+    const roleCols = info.roles.map((r) => {
+      return {
+        field: r.role
+          .replace(/ /g, "_")
+          .replace(/\(/g, "_")
+          .replace(/\)/g, "_"),
+        headerName: r.role,
+        width: 150,
+        renderCell: (cellValues) => {
+          const { value, row } = cellValues,
+            userArray = value ? value.split(",") : [];
+          // console.log(userArray);
+          if (userArray.length === 0) return null;
+          else
+            return userArray.map((u) => {
+              const address = `mailto:${u}@argenx.com?subject=${row.study} - ${
+                row.rep_event ? row.rep_event : null
+              }`;
+              return (
+                <Tooltip title={"Email " + u}>
+                  <Button
+                    sx={{
+                      mr: "4px",
+                      p: 0,
+                      fontSize: ".7rem",
+                      minWidth: "30px",
+                    }}
+                    size="small"
+                    variant="outlined"
+                    href={address}
+                  >
+                    {u.substring(0, 2)}
+                  </Button>
+                </Tooltip>
+              );
+            });
+        },
+      };
+    });
+    // merge in more info about studies
+    const tempStudies = tempStudies2.map((r, rid) => {
+      const e0 = info.studies_info.filter(
+          (f) => f.study.toUpperCase() === r.study.toUpperCase()
+        ),
+        e = e0.length > 0 ? e0[0] : {};
+      delete r.id;
+      delete e.id;
+      return {
+        id: rid,
+        ...r,
+        ...e,
+      };
+    });
+    const studyCols = [
+      "Control_Type",
+      "FPFV",
+      "First_ICF_date",
+      "Investigational_Treatment",
+      "Investigational_Treatment2",
+      "LPLV",
+      "No_of_subjects_treated",
+      "Protocol_name",
+      "Randomization_Quotient",
+      "SDTM_IG_Version",
+      "SDTM_Version",
+      "Trial_Title",
+      "adsl_refresh_date",
+      "days_between",
+      "days_since_last_adsl_refresh",
+      "days_since_last_ae_refresh",
+      "eosdt",
+      "lstcndt",
+      "sdtm_ae_refresh_date",
+      "status",
+    ].map((s) => {
+      return { field: s, headerName: s, width: 90 };
+    });
+
+    setStudiesCols([
+      {
+        field: "compound",
+        headerName: "compound",
+        width: 80,
+      },
+      {
+        field: "indication",
+        headerName: "indication",
+        width: 80,
+      },
+      {
+        field: "study",
+        headerName: "study",
+        width: 100,
+      },
+      ...roleCols,
+      ...studyCols,
+    ]);
+    setStudies(tempStudies);
+
+    // reporting events
+    const tempRepEvent0 = info.treegraph.filter(
+        (t) => t.id.substring(0, 1) === "7"
+      ),
+      tempRepEvent1 = tempRepEvent0.map((s, sid) => {
+        const split = s.path.split("/"),
+          compound = split[2],
+          indication = split[3],
+          study = split[4],
+          rep_event = split[7];
+        return {
+          id: sid,
+          compound: compound,
+          indication: indication,
+          study: study,
+          rep_event: rep_event,
+          ...s,
+        };
+      }),
+      // merge in the info about user roles
+      tempRepEvent = tempRepEvent1.map((r, rid) => {
+        const e0 = info.tpstudy.filter(
+            (f) => f.newstudy.toUpperCase() === r.study.toUpperCase()
+          ),
+          e = e0.length > 0 ? e0[0] : {};
+        return {
+          ...r,
+          ...e,
+          id: rid,
+          key: rid,
+        };
+      });
+    setRepEventCols([
+      {
+        field: "compound",
+        headerName: "compound",
+        width: 80,
+      },
+      {
+        field: "indication",
+        headerName: "indication",
+        width: 80,
+      },
+      {
+        field: "study",
+        headerName: "study",
+        width: 100,
+      },
+      {
+        field: "rep_event",
+        headerName: "rep_event",
+        width: 200,
+      },
+      ...roleCols,
+    ]);
+    setRepEvent(tempRepEvent);
+
+    console.log(
+      "tempStudies",
+      tempStudies,
+      roleCols,
+      "tempRepEvent",
+      tempRepEvent
+    );
+  }, []);
+
+  // make study hierarchy table data
+  useEffect(() => {
+    // console.log("info", info, "dashStudyFiles", dashStudyFiles);
+    const dashStudy = dashStudyFiles["SASTableData+LSAFSEARCH"].map((ds) => {
+      const studyPath = ds.path.replace("/documents/meta/dashstudy.json", "");
+      return { studyPath: studyPath, lastModified: ds.lastModified };
+    });
+    // console.log("dashStudy", dashStudy);
+    const treegraph = info.treegraph,
+      tempStudyData = treegraph.map((d, did) => {
+        const group = d.path.substring(1).split("/"),
+          f = dashStudy.filter((ds) => ds.studyPath === d.path),
+          studyPath = f && f.length > 0 ? f[0].studyPath : null,
+          lastModified = f && f.length > 0 ? f[0].lastModified : null;
+        // console.log(f, studyPath);
+        return {
+          id: did,
+          group: group,
+          studyPath: studyPath,
+          lastModified: lastModified,
+          ...d,
+        };
+      }),
+      tempStudyDataCols = [
+        // { field: "group", headerName: "Study Hierarchy", width: 200 },
+        {
+          field: "path",
+          headerName: "Path",
+          width: 50,
+          renderCell: (cellValues) => {
+            const { value } = cellValues;
+            return (
+              <Tooltip title={`Open file viewer at ${value}`}>
+                <IconButton
+                  onClick={() => {
+                    window.open(
+                      "https://xarprod.ondemand.sas.com/lsaf/filedownload/sdd:/general/biostat/tools/fileviewer/index.html?file=" +
+                        value
+                    );
+                  }}
+                >
+                  <FolderOpen />
+                </IconButton>
+              </Tooltip>
+            );
+          },
+        },
+        {
+          field: "dash",
+          headerName: "Old",
+          width: 50,
+          renderCell: (cellValues) => {
+            const { row, value } = cellValues;
+            if (value)
+              return (
+                <Tooltip
+                  title={`Open old dashboard created ${row.dashLastModified}`}
+                >
+                  <IconButton
+                    onClick={() => {
+                      window.open(
+                        "https://xarprod.ondemand.sas.com/lsaf/webdav/repo" +
+                          value
+                      );
+                    }}
+                  >
+                    <Dashboard />
+                  </IconButton>
+                </Tooltip>
+              );
+            else return null;
+          },
+        },
+        {
+          field: "studyPath",
+          headerName: "Dashboard",
+          width: 50,
+          renderCell: (cellValues) => {
+            const { value, row } = cellValues;
+            if (value)
+              return (
+                <Tooltip
+                  title={`Open study dashboard created ${row.lastModified}`}
+                >
+                  <IconButton
+                    onClick={() => {
+                      window.open(
+                        "https://xarprod.ondemand.sas.com/lsaf/filedownload/sdd%3A///general/biostat/tools/dashstudy/index.html?file=" +
+                          value +
+                          "/documents/meta/dashstudy.json"
+                      );
+                    }}
+                  >
+                    <Dashboard />
+                  </IconButton>
+                </Tooltip>
+              );
+            else return null;
+          },
+        },
+      ];
+    setStudyData(tempStudyData);
+    setStudyDataCols(tempStudyDataCols);
+    // console.log(
+    //   "tempStudyDataCols",
+    //   tempStudyDataCols,
+    //   "tempStudyData",
+    //   tempStudyData
+    // );
+  }, []);
+
   useEffect(() => {
     setGraph1({
       chart: {
         type: "treegraph",
-        height: screenHeight * 0.95,
+        height: screenHeight * 0.9,
         width: screenWidth * 0.85,
         zooming: { type: "xy" },
       },
@@ -188,61 +577,14 @@ function App() {
 
   // extract study name if we can
   useEffect(() => {
-    if (singleClickedPath === null) return;
-    setStudy(null);
-    setIndication(null);
-    setCompound(null);
-    setReportingEvent(null);
-    setInfo1(null);
-    setInfo2(null);
-    const split = singleClickedPath.split("/");
-    console.log(split, split.length);
-    // compound
-    if (split.length === 3) {
-      const tempCompound = split.pop();
-      console.log("tempCompound", tempCompound);
-      setCompound(tempCompound);
-    }
-    // indication
-    else if (split.length === 4) {
-      const tempIndication = split.pop();
-      // get info from tpindic
-      const row2 = info["tpindic"].filter(
-        (r) => r.indication.toUpperCase() === tempIndication.toUpperCase()
-      );
-      if (row2.length > 0) setInfo2(row2[0]);
-      console.log("tempIndication", tempIndication, "row2", row2);
-      setIndication(tempIndication);
-    }
-    // study
-    else if (split.length === 5) {
-      const tempStudy = split.pop();
-      // get info from studies_info
-      const row1 = info["studies_info"].filter(
-        (r) => r.study.toUpperCase() === tempStudy.toUpperCase()
-      );
-      if (row1.length > 0) setInfo1(row1[0]);
-      // get info from tpstudy
-      const row2 = info["tpstudy"].filter(
-        (r) => r.newstudy.toUpperCase() === tempStudy.toUpperCase()
-      );
-      if (row2.length > 0) setInfo2(row2[0]);
-      console.log("tempStudy", tempStudy, "row1", row1, "row2", row2);
-      setStudy(tempStudy);
-    }
-    // reporting event
-    else if (split.length === 8) {
-      const tempReportingEvent = split.pop();
-      console.log("tempReportingEvent", tempReportingEvent);
-      setReportingEvent(tempReportingEvent);
-    }
+    extractInfo(singleClickedPath);
   }, [singleClickedPath, doubleClickedPath]);
 
   return (
     <div className="App">
       <Box sx={{ m: 2, flexGrow: 1 }}>
         <Grid container spacing={2}>
-          <Grid xs={12}>
+          <Grid item xs={12}>
             <AppBar position="static">
               <Toolbar variant="dense">
                 <IconButton
@@ -305,8 +647,8 @@ function App() {
             </AppBar>
           </Grid>
           <Grid item xs={1}>
-            {tables.map((t) => (
-              <Tooltip title={`View the table: ${t}`}>
+            {tables.map((t, id) => (
+              <Tooltip key={"tt" + id} title={`View the table: ${t}`}>
                 <Button
                   color={"success"}
                   size="small"
@@ -314,6 +656,7 @@ function App() {
                   onClick={() => {
                     setRows(info[t]);
                     setCols(columnDef[t]);
+                    setTreeDataTable(false);
                     setShowTree(false);
                   }}
                   sx={{ mb: 1 }}
@@ -330,6 +673,7 @@ function App() {
                   setRows(null);
                   setCols(null);
                   setShowTree(true);
+                  setTreeDataTable(false);
                   setSingleClickedName(null);
                   setSingleClickedPath(null);
                   setDoubleClickedName(null);
@@ -338,33 +682,170 @@ function App() {
                 variant="contained"
                 sx={{ mt: 2 }}
               >
-                Study hierarchy
+                Study Graph
+              </Button>
+            </Tooltip>
+            <Tooltip title="Study Hierarchy Table">
+              <Button
+                color={"warning"}
+                size="small"
+                onClick={() => {
+                  setRows(studyData);
+                  setCols(studyDataCols);
+                  setTreeDataTable(true);
+                  setTreeData(true);
+                  setShowTree(false);
+                  setSingleClickedName(null);
+                  setSingleClickedPath(null);
+                  setDoubleClickedName(null);
+                  setDoubleClickedPath(null);
+                }}
+                variant="contained"
+                sx={{ mt: 2 }}
+              >
+                Study Table
+              </Button>
+            </Tooltip>
+            <Tooltip title="Table of Studys">
+              <Button
+                color={"info"}
+                size="small"
+                onClick={() => {
+                  setRows(studies);
+                  setCols(studiesCols);
+                  setTreeDataTable(false);
+                  setShowTree(false);
+                }}
+                variant="contained"
+                sx={{ mt: 2 }}
+              >
+                Studies
+              </Button>
+            </Tooltip>
+            <Tooltip title="Table of Reporting Events">
+              <Button
+                color={"info"}
+                size="small"
+                onClick={() => {
+                  setRows(repEvent);
+                  setCols(repEventCols);
+                  setTreeDataTable(false);
+                  setShowTree(false);
+                }}
+                variant="contained"
+                sx={{ mt: 2 }}
+              >
+                Rep Events
               </Button>
             </Tooltip>
           </Grid>
-          {rows ? (
-            <Grid item xs={11}>
+          <Grid item xs={11}>
+            {userHolidays.available && (
+              <Box sx={{ width: "80%" }}>
+                <CalendarHeatmap
+                  startDate={new Date("2023-06-01")}
+                  endDate={new Date("2024-07-01")}
+                  values={userHolidays.available}
+                  classForValue={(value) => {
+                    if (!value) {
+                      return "color-empty";
+                    } else if (value.count < 5) return `color-0`;
+                    else if (value.count < 7) return `color-1`;
+                    else if (value.count < 9) return `color-2`;
+                    else if (value.count < 11) return `color-3`;
+                    else if (value.count < 13) return `color-4`;
+                    else if (value.count < 15) return `color-5`;
+                    else if (value.count < 17) return `color-6`;
+                    else if (value.count < 19) return `color-7`;
+                    else if (value.count < 21) return `color-8`;
+                    else if (value.count < 23) return `color-9`;
+                    else return `color-10`;
+                  }}
+                  tooltipDataAttrs={(value) => {
+                    return {
+                      "data-tooltip-id": "my-tooltip",
+                      "data-tooltip-content": `${value.date} has ${value.count} people available`,
+                    };
+                  }}
+                  showWeekdayLabels={true}
+                  onClick={(value) =>
+                    alert(`Clicked on value with count: ${value.count}`)
+                  }
+                />
+                <ReactTooltip id="my-tooltip" />
+              </Box>
+            )}
+            {rows && cols && !treeDataTable ? (
               <DataGridPro
                 rows={rows}
                 columns={cols}
                 density="compact"
                 hideFooter={true}
+                disableColumnFilter
+                disableColumnSelector
+                disableDensitySelector
+                slots={{ toolbar: GridToolbar }}
+                slotProps={{
+                  toolbar: {
+                    showQuickFilter: true,
+                    quickFilterProps: { debounceMs: 500 },
+                  },
+                }}
+                // treeData={treeData}
+                // getTreeDataPath={getTreeDataPath}
                 sx={{
-                  height: windowDimension.winHeight - 80,
+                  height: windowDimension.winHeight - topMargin,
                   fontWeight: "fontSize=5",
                   fontSize: "0.7em",
                   padding: 1,
                 }}
               />
-            </Grid>
-          ) : null}
-          {graph1 && showTree ? (
-            <HighchartsReact highcharts={Highcharts} options={graph1} />
-          ) : null}
+            ) : null}
+            {rows && cols && treeDataTable ? (
+              <DataGridPro
+                rows={rows}
+                columns={cols}
+                density="compact"
+                hideFooter={true}
+                treeData={treeData}
+                getTreeDataPath={getTreeDataPath}
+                groupingColDef={groupingColDef}
+                onRowDoubleClick={handleDoubleClick}
+                disableColumnFilter
+                disableColumnSelector
+                disableDensitySelector
+                slots={{ toolbar: GridToolbar }}
+                slotProps={{
+                  toolbar: {
+                    showQuickFilter: true,
+                    quickFilterProps: { debounceMs: 500 },
+                  },
+                }}
+                defaultGroupingExpansionDepth={1}
+                // apiRef={}
+                // onRowClick={(e) => {
+                //   setSingleClickedPath(e.row.path);
+                //   setSingleClickedName(e.row.path.pop());
+                // }}
+                // defaultGroupingExpansionDepth={-1}
+                sx={{
+                  height: windowDimension.winHeight - topMargin,
+                  fontWeight: "fontSize=5",
+                  fontSize: "0.7em",
+                  padding: 1,
+                }}
+              />
+            ) : null}
+            {graph1 && showTree ? (
+              <HighchartsReact highcharts={Highcharts} options={graph1} />
+            ) : null}
+          </Grid>
         </Grid>
         <Dialog
-          fullWidth={true}
-          maxWidth={"sd"}
+          // fullScreen
+          // sx={{ height: "1200" }}
+          // fullWidth={true}
+          // maxWidth={"sd"}
           open={open}
           onClose={handleClose}
         >
@@ -397,14 +878,19 @@ function App() {
           <DialogContent sx={{ height: 250 }}>
             {info1 ? (
               <>
-                {Object.keys(info1).map((k) => {
+                {Object.keys(info1).map((k, kid) => {
                   let width = 200,
                     multiline = false;
                   if (["Trial_Title", "Protocol_name"].includes(k)) {
                     width = screenWidth - 200;
                     multiline = true;
                   }
-                  if (k!=='id' && info1[k] && info1[k] !== null && info2[k] !== "") {
+                  if (
+                    k !== "id" &&
+                    info1[k] &&
+                    info1[k] !== null &&
+                    info2[k] !== ""
+                  ) {
                     return (
                       <TextField
                         value={info1[k]}
@@ -413,6 +899,7 @@ function App() {
                         multiline={multiline}
                         variant="standard"
                         size="small"
+                        key={"tf1" + kid}
                       />
                     );
                   } else return <></>;
@@ -421,7 +908,7 @@ function App() {
             ) : null}
             {info2 ? (
               <>
-                {Object.keys(info2).map((k) => {
+                {Object.keys(info2).map((k, kid) => {
                   if (
                     ![
                       "id",
@@ -440,6 +927,7 @@ function App() {
                         sx={{ width: 200, mr: 2 }}
                         variant="standard"
                         size="small"
+                        key={"tf2" + kid}
                       />
                     );
                   else return <></>;
