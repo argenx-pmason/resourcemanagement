@@ -43,7 +43,7 @@
  * All of the styles in this file are optional and configurable!
  */
 
- .react-calendar-heatmap text {
+.react-calendar-heatmap text {
   font-size: 10px;
   fill: #aaa;
 }
@@ -77,7 +77,7 @@
   fill: #888888;
 }
 .react-calendar-heatmap .color-1 {
-  fill: #0E4D64;
+  fill: #0e4d64;
 }
 .react-calendar-heatmap .color-2 {
   fill: #137177;
@@ -86,23 +86,67 @@
   fill: #188977;
 }
 .react-calendar-heatmap .color-4 {
-  fill: #1D9A6C;
+  fill: #1d9a6c;
 }
 .react-calendar-heatmap .color-5 {
-  fill: #39A96B;
+  fill: #39a96b;
 }
 .react-calendar-heatmap .color-6 {
-  fill: #56B870;
+  fill: #56b870;
 }
 .react-calendar-heatmap .color-7 {
-  fill: #74C67A;
+  fill: #74c67a;
 }
 .react-calendar-heatmap .color-8 {
-  fill: #99D492;
+  fill: #99d492;
 }
 .react-calendar-heatmap .color-9 {
-  fill: #BFE1B0;
+  fill: #bfe1b0;
 }
 .react-calendar-heatmap .color-10 {
-  fill: #DEEDCF;
+  fill: #deedcf;
+}
+.react-calendar-heatmap .color-0f {
+  fill: #888888;
+  outline: 2px solid yellow;
+}
+.react-calendar-heatmap .color-1f {
+  fill: #0e4d64;
+  outline: 2px solid yellow;
+}
+.react-calendar-heatmap .color-2f {
+  fill: #137177;
+  outline: 2px solid yellow;
+}
+.react-calendar-heatmap .color-3f {
+  fill: #188977;
+  outline: 2px solid yellow;
+}
+.react-calendar-heatmap .color-4f {
+  fill: #1d9a6c;
+  outline: 2px solid yellow;
+}
+.react-calendar-heatmap .color-5f {
+  fill: #39a96b;
+  outline: 2px solid yellow;
+}
+.react-calendar-heatmap .color-6f {
+  fill: #56b870;
+  outline: 2px solid yellow;
+}
+.react-calendar-heatmap .color-7 {
+  fill: #74c67a;
+  outline: 2px solid yellow;
+}
+.react-calendar-heatmap .color-8f {
+  fill: #99d492;
+  outline: 2px solid yellow;
+}
+.react-calendar-heatmap .color-9f {
+  fill: #bfe1b0;
+  outline: 2px solid yellow;
+}
+.react-calendar-heatmap .color-10f {
+  fill: #deedcf;
+  outline: 2px solid yellow;
 }
